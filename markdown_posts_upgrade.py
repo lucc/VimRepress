@@ -2,6 +2,7 @@
 
 
 import urllib2, xmlrpclib, re, os, sys
+import getpass
 
 class VimPressException(Exception):
     pass
@@ -200,27 +201,56 @@ def loop_proccess_posts(posts, edit_type):
     print "\n\n"
 
 print """
+
+Vimrepress 3.x upgrade script
+
+WHY:
+
+    The older (2.x) vimrepress stores your originally
+    written markdown text in an attachment with the
+    post on wordpress.
+
+    A better way is implemented in the new (3.x)
+    vimrepress, the markdown texts stores in the custom
+    field of a post.
+
+    If you used vimrepress 2.x to write your blog before,
+    and want the 3.x to be able to edit your old posts,
+    this script is needed to convert the attachments 
+    content into the custom field.
+
+HOW:
+    
+    Fillin the address/username/password as asked, script 
+    will scan through your posts, when a markdown attached
+    post found, it will download and read it into the
+    database.
+
+
+I tested this script works flawlessly to my own blog,
+but I don't guarantee no exceptions in other circumstance,
+I don't respons for any data lost.
+
+Backup your wordpress with this plugin: WP-DB-Backup  
+ ( http://wordpress.org/extend/plugins/wp-db-backup/ )
+or phpmyadmin/adminer/mysqldump anything you like it most.
+
                           WARNNING
 #########################################################
 Warnning: Backup your wordpress database before procceed.
 Warnning: Backup your wordpress database before procceed.
 Warnning: Backup your wordpress database before procceed.
 #########################################################
-
-This script is designed to convert older version of vimpress
-edited posts of wordpress into newer custom fields data, 
-I tested it works flawlessly to my own blog, but I don't 
-guarantee no exceptions in other circumstance, I don't 
-respons for any data lost if you used this script without 
-DATABASE BACKUP.
-
-BACKUP !!
-
 """
 
 URL = raw_input("Blog URL: ")
 USER = raw_input("USERNAME: ")
-PASS = raw_input("PASSWORD: ")
+PASS = getpass.getpass()
+
+i = raw_input("Have you backed up your wordpress database? [y/N]")
+if i.lower() == 'n' or i == '':
+    print "go and do that, don't risk your data."
+    sys.exit(1)
 
 g_data = DataObject()
 g_data.xmlrpc = wp_xmlrpc(URL, USER, PASS)
