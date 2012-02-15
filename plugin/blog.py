@@ -50,9 +50,6 @@ class DataObject(object):
                   more = '"====== Press Here for More ======',
                   list_title = '"====== %(edit_type)s List in %(blog_url)s =========')
     LIST_VIEW_KEY_MAP = dict(enter = "<enter>", delete = "<delete>")
-    DEFAULT_META = dict(strid = "", title = "", slug = "", 
-                        cats = "", tags = "", editformat = "Markdown", 
-                        edittype = "") 
     CUSTOM_FIELD_KEY = "mkd_text"
 
     #Temp variables.
@@ -223,30 +220,32 @@ class ContentStruct(object):
     buffer_meta = None
     post_struct_meta = None
     EDIT_TYPE = ''
-    META_TEMP = dict(post = \
-u""""%(bg)s
-"StrID : %(strid)s
-"Title : %(title)s
-"Slug  : %(slug)s
-"Cats  : %(cats)s
-"Tags  : %(tags)s
-"%(mid)s
-"EditType   : %(edittype)s
-"EditFormat : %(editformat)s
-"BlogAddr   : %(blogaddr)s
-"%(ed)s""", page = \
-u""""%(bg)s
-"StrID : %(strid)s
-"Title : %(title)s
-"Slug  : %(slug)s
-"%(mid)s
-"EditType   : %(edittype)s
-"EditFormat : %(editformat)s
-"BlogAddr   : %(blogaddr)s
-"%(ed)s""")
+    META_TEMPLATE_TYPE = dict(
+            post = \
+                u'"%(bg)s\n'\
+                '"StrID : %(strid)s\n'\
+                '"Title : %(title)s\n'\
+                '"Slug  : %(slug)s\n'\
+                '"Cats  : %(cats)s\n'\
+                '"Tags  : %(tags)s\n'\
+                '"%(mid)s\n'\
+                '"EditType   : %(edittype)s\n'\
+                '"EditFormat : %(editformat)s\n'\
+                '"BlogAddr   : %(blogaddr)s\n'\
+                '"%(ed)s\n', 
+            page = \
+                u'%(bg)s\n'\
+                '"StrID : %(strid)s\n'\
+                '"Title : %(title)s\n'\
+                '"Slug  : %(slug)s\n'\
+                '"%(mid)s\n'\
+                '"EditType   : %(edittype)s\n'\
+                '"EditFormat : %(editformat)s\n'\
+                '"BlogAddr   : %(blogaddr)s\n'\
+                '"%(ed)s\n')
 
-    POST_BEGIN = property(lambda self:len(self.META_TEMP[self.EDIT_TYPE].splitlines()))
-
+    META_TEMPLATE = property(lambda self:self.META_TEMPLATE_TYPE.get(self.EDIT_TYPE))
+    POST_BEGIN = property(lambda self:len(self.META_TEMPLATE.splitlines()))
     raw_text = ''
     html_text = ''
 
@@ -286,13 +285,11 @@ u""""%(bg)s
         self.buffer_meta["content"] = '\n'.join(vim.current.buffer[end + 1:]).decode('utf-8')
 
     def fill_buffer(self):
-        meta = self.buffer_meta.copy()
-        meta_temp = self.META_TEMP[self.EDIT_TYPE]
-        for k in g_data.DEFAULT_META.keys():
-            if k not in meta:
-                meta[k] = g_data.DEFAULT_META[k]
+        meta = dict(strid = "", title = "", slug = "", cats = "", tags = "", editformat = "Markdown", 
+                        edittype = "") 
+        meta.update(self.buffer_meta)
         meta.update(g_data.MARKER)
-        meta_text = (meta_temp % meta).encode('utf-8').splitlines()
+        meta_text = (self.META_TEMPLATE % meta).encode('utf-8').splitlines()
         vim.current.buffer[0] = meta_text[0]
         vim.current.buffer.append(meta_text[1:])
         content = self.buffer_meta.get("content", ' ').encode('utf-8').splitlines()
@@ -428,22 +425,17 @@ u""""%(bg)s
             g_data.vimpress_temp_dir = tempfile.mkdtemp(suffix="vimpress")
         
         html = \
-u"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Vimpress Local Preview: %(title)s</title>
-<style type="text/css"> ul, li { margin: 1em; } :link,:visited { text-decoration:none } h1,h2,h3,h4,h5,h6,pre,code { font-size:1em; } a img,:link img,:visited img { border:none } body { margin:0 auto; width:770px; font-family: Helvetica, Arial, Sans-serif; font-size:12px; color:#444; }
-</style>
-</meta>
-</head>
-<body> 
-%(content)s 
-</body>
-</html>
+            u"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"> <title>Vimpress Local Preview: %(title)s</title> <style type="text/css"> ul, li { margin: 1em; } :link,:visited { text-decoration:none } h1,h2,h3,h4,h5,h6,pre,code { font-size:1em; } a img,:link img,:visited img { border:none } body { margin:0 auto; width:770px; font-family: Helvetica, Arial, Sans-serif; font-size:12px; color:#444; } </style> </meta> </head> <body> %(content)s </body> </html>
 """ % dict(content = self.html_text, title = self.buffer_meta["title"])
         with open(os.path.join(g_data.vimpress_temp_dir, "vimpress_temp.html"), 'w') as f:
             f.write(html.encode('utf-8'))
         webbrowser.open("file://%s" % f.name)
+
+    def remote_preview(self, pub = "draft"):
+        self.post_status = pub
+        self.save_post()
+        webbrowser.open("%s?p=%s&preview=true" % (g_data.blog_url, self.post_id))
+
 
 #################################################
 # Golbal Variables
@@ -772,16 +764,12 @@ def blog_preview(pub = "local"):
                   If "draft", the content is saved as a draft and previewed remotely.
                   If "publish", the content is published and displayed remotely.
     """
-
     cp = g_data.current_post
     cp.refresh_from_buffer()
-    meta = cp.buffer_meta
     if pub == "local":
         cp.html_preview()
     elif pub in ("publish", "draft"):
-        cp.post_status = pub
-        cp.save_post()
-        webbrowser.open("%s?p=%s&preview=true" % (g_data.blog_url, cp.post_id))
+        cp.remote_preview(pub)
         if pub == "draft":
             sys.stdout.write("\nYou have to login in the browser to preview the post when save as draft.")
     else:
