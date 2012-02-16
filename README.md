@@ -31,14 +31,15 @@ This is a repository for Preston's fork.
 Edit ~/.vimrc , add a variable named VIMPRESS. Multiple blog configurations are supported.
 
 Example:
-{{{
-let VIMPRESS = [{'username':'user',
-                \'password':'pass',
-                \'blog_url':'http://your-first-blog.com/'
-                \},
-                \{'username':'user',
-                \'blog_url':'http://your-second-blog.com/'
-                \}]
-}}}
+
+    let VIMPRESS = [{'username':'user',
+                    \'password':'pass',
+                    \'blog_url':'http://your-first-blog.com/'
+                    \},
+                    \{'username':'user',
+                    \'blog_url':'http://your-second-blog.com/'
+                    \}]
+
+
 Hardcoding the password is optional. If a password is not provided the plugin will prompt for one the first time it's needed.
 
