@@ -1,6 +1,4 @@
 #!/usr/bin/env python2
-
-
 import urllib2, xmlrpclib, re, os, sys
 import getpass
 
@@ -27,6 +25,7 @@ class DataObject(object):
                         edittype = "post", textattach = '')
     TAG_STRING = "<!-- #VIMPRESS_TAG# %(url)s %(file)s -->"
     TAG_RE = re.compile(TAG_STRING % dict(url = '(?P<mkd_url>\S+)', file = '(?P<mkd_name>\S+)'))
+    CUSTOM_FIELD_KEY = "mkd_text"
 
     #Temp variables.
     __xmlrpc = None
@@ -78,7 +77,7 @@ class wp_xmlrpc(object):
     get_post = lambda self, post_id: self.mw_api.getPost(post_id,
             self.username, self.password) 
 
-    edit_post = lambda self, post_id, post_struct, is_publish: self.mw_api.editPost(post_id,
+    edit_post = lambda self, post_id, post_struct: self.mw_api.editPost(post_id,
             self.username, self.password, post_struct )
 
     delete_post = lambda self, post_id: self.mw_api.deletePost('', post_id, self.username,
@@ -125,12 +124,9 @@ def blog_get_mkd_attachment(post):
     return attach
 
 def blog_update(post, content, attach):
-
     lead = content.rindex("<!-- ")
     new_content = content[:lead]
-
     markdown_text = attach["mkd_rawtext"]
-    
     post_struct = post
 
     try:
@@ -144,19 +140,16 @@ def blog_update(post, content, attach):
     post_struct["description"] = new_content
 
     if len(markdown_text) > 0:
-        updated = False
         for f in post_struct["custom_fields"]:
             if f["key"] == g_data.CUSTOM_FIELD_KEY:
                 f["value"] = markdown_text
-                updated = True
                 break
-        if not updated:
+        else:
             post_struct["custom_fields"].append(dict(key = g_data.CUSTOM_FIELD_KEY, value = markdown_text))
 
     try:
         g_data.xmlrpc.edit_post(strid, post_struct )
     except xmlrpclib.Fault, e:
-        import pdb;pdb.set_trace()
         raise
 
 
@@ -170,11 +163,10 @@ def post_struct_get_content(data):
     elif len(page_more) > 0:
         content += '<!--more-->' + page_more
 
-#    content = content.encode("utf-8")
-
     return content
 
 def loop_proccess_posts(posts, edit_type):
+    print "ID           Title"
     for post in posts:
         if edit_type == "page":
             print u"%(page_id)s\t%(page_title)s" % post, '... ',
@@ -187,7 +179,6 @@ def loop_proccess_posts(posts, edit_type):
             post_id = post["postid"].encode("utf-8")
             data = g_data.xmlrpc.get_post(post_id)
 
-        import ipdb;ipdb.set_trace()
         content = post_struct_get_content(data)
         try:
             attach = blog_get_mkd_attachment(content)
@@ -226,13 +217,13 @@ HOW:
     post found, it will download and read it into the
     database.
 
-
 I tested this script works flawlessly to my own blog,
 but I don't guarantee no exceptions in other circumstance,
 I don't respons for any data lost.
 
 Backup your wordpress with this plugin: WP-DB-Backup  
  ( http://wordpress.org/extend/plugins/wp-db-backup/ )
+
 or phpmyadmin/adminer/mysqldump anything you like it most.
 
                           WARNNING
@@ -249,7 +240,7 @@ PASS = getpass.getpass()
 
 i = raw_input("Have you backed up your wordpress database? [y/N]")
 if i.lower() == 'n' or i == '':
-    print "go and do that, don't risk your data."
+    print "----> Go and do that, don't risk your data."
     sys.exit(1)
 
 g_data = DataObject()
@@ -265,7 +256,7 @@ if i.lower() == 'y' or i == '':
 
 i = raw_input("Upgrade Posts ?[Y/n]")
 if i.lower() == 'y' or i == '':
-    count = raw_input("How many recent posts to retrive ?[100]")
+    count = raw_input("How many recent posts to process? [100]")
     if count == '':
         count = '100'
     assert isinstance(int(count), int), "input a integer please."
@@ -273,9 +264,10 @@ if i.lower() == 'y' or i == '':
     loop_proccess_posts(posts, "post")
 
 if len(attachements_proccessed) > 0:
-    print "All Done. Congras.\n"
-    print "You may now delete this attachments from wordpress panel.\n\n"
-    for a in attachements_proccessed:
-        print a
+    print "All Done. Congras."
+    print "You may now delete this attachments from wordpress panel."
+    print URL+"/wp-admin/upload.php"
+    print 
+    print "\n".join(attachements_proccessed)
 
 
