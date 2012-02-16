@@ -20,7 +20,8 @@
 "               Justin Sattery <justin.slattery@fzysqr.com>
 "               Lenin Lee <lenin.lee@gmail.com>
 "               Conner McDaniel <connermcd@gmail.com>
-" Final Forked By:   Preston M.[BOYPT] <pentie@gmail.com>
+"
+" Forked By:   Preston M.[BOYPT] <pentie@gmail.com>
 "
 " URL:		http://www.friggeri.net/projets/vimblog/
 "           http://pigeond.net/blog/2009/05/07/vimpress-again/
@@ -34,7 +35,7 @@
 "    - Write with Markdown, control posts format precisely.
 "    - Stores Markdown rawtext in wordpress custom fields.
 "
-" Version:	3.0.0
+" Version:	3.0
 "
 " Configure: Add blog configure into your .vimrc (password optional)
 "

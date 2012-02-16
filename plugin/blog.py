@@ -220,31 +220,20 @@ class ContentStruct(object):
     buffer_meta = None
     post_struct_meta = None
     EDIT_TYPE = ''
-    META_TEMPLATE_TYPE = dict(
-            post = \
-                u'"%(bg)s\n'\
-                '"StrID : %(strid)s\n'\
-                '"Title : %(title)s\n'\
-                '"Slug  : %(slug)s\n'\
-                '"Cats  : %(cats)s\n'\
-                '"Tags  : %(tags)s\n'\
-                '"%(mid)s\n'\
-                '"EditType   : %(edittype)s\n'\
-                '"EditFormat : %(editformat)s\n'\
-                '"BlogAddr   : %(blogaddr)s\n'\
-                '"%(ed)s\n', 
-            page = \
-                u'%(bg)s\n'\
-                '"StrID : %(strid)s\n'\
-                '"Title : %(title)s\n'\
-                '"Slug  : %(slug)s\n'\
-                '"%(mid)s\n'\
-                '"EditType   : %(edittype)s\n'\
-                '"EditFormat : %(editformat)s\n'\
-                '"BlogAddr   : %(blogaddr)s\n'\
-                '"%(ed)s\n')
 
-    META_TEMPLATE = property(lambda self:self.META_TEMPLATE_TYPE.get(self.EDIT_TYPE))
+    @property
+    def META_TEMPLATE(self):
+        KEYS_BASIC = ("StrID", "Title", "Slug")
+        KEYS_EXT = ("Cats", "Tags")
+        KEYS_BLOG = ("EditType", "EditFormat", "BlogAddr") 
+
+        pt = ['"{k:<6}: {{{t}}}'.format(k=p,t=p.lower()) for p in KEYS_BASIC]
+        if self.EDIT_TYPE == "post":
+            pt.extend(['"{k:<6}: {{{t}}}'.format(k=p,t=p.lower()) for p in KEYS_EXT])
+        pm = "\n".join(pt)
+        bm = "\n".join(['"{k:<11}: {{{t}}}'.format(k=p,t=p.lower()) for p in KEYS_BLOG])
+        return u'"{bg}\n{0}\n"{mid}\n{1}\n"{ed}\n'.format(pm, bm, **G.MARKER)
+
     POST_BEGIN = property(lambda self:len(self.META_TEMPLATE.splitlines()))
     raw_text = ''
     html_text = ''
@@ -268,11 +257,11 @@ class ContentStruct(object):
 
     def parse_buffer(self):
         start = 0
-        while not vim.current.buffer[start][1:].startswith(g_data.MARKER['bg']):
+        while not vim.current.buffer[start][1:].startswith(G.MARKER['bg']):
             start +=1
 
         end = start + 1
-        while not vim.current.buffer[end][1:].startswith(g_data.MARKER['ed']):
+        while not vim.current.buffer[end][1:].startswith(G.MARKER['ed']):
             if not vim.current.buffer[end].startswith('"===='):
                 line = vim.current.buffer[end][1:].strip().split(":")
                 k, v = line[0].strip().lower(), ':'.join(line[1:])
@@ -285,11 +274,10 @@ class ContentStruct(object):
         self.buffer_meta["content"] = '\n'.join(vim.current.buffer[end + 1:]).decode('utf-8')
 
     def fill_buffer(self):
-        meta = dict(strid = "", title = "", slug = "", cats = "", tags = "", editformat = "Markdown", 
-                        edittype = "") 
+        meta = dict(strid = "", title = "", slug = "", 
+                cats = "", tags = "", editformat = "Markdown", edittype = "") 
         meta.update(self.buffer_meta)
-        meta.update(g_data.MARKER)
-        meta_text = (self.META_TEMPLATE % meta).encode('utf-8').splitlines()
+        meta_text = self.META_TEMPLATE.format(**meta).encode('utf-8').splitlines()
         vim.current.buffer[0] = meta_text[0]
         vim.current.buffer.append(meta_text[1:])
         content = self.buffer_meta.get("content", ' ').encode('utf-8').splitlines()
@@ -302,11 +290,11 @@ class ContentStruct(object):
         """
         kw = self.buffer_meta
         start = 0
-        while not vim.current.buffer[start][1:].startswith(g_data.MARKER['bg']):
+        while not vim.current.buffer[start][1:].startswith(G.MARKER['bg']):
             start +=1
 
         end = start + 1
-        while not vim.current.buffer[end][1:].startswith(g_data.MARKER['ed']):
+        while not vim.current.buffer[end][1:].startswith(G.MARKER['ed']):
             if not vim.current.buffer[end].startswith('"===='):
                 line = vim.current.buffer[end][1:].strip().split(":")
                 k, v = line[0].strip().lower(), ':'.join(line[1:])
@@ -334,12 +322,12 @@ class ContentStruct(object):
         #Translate markdown and save in custom fields.
         if meta["editformat"].lower() == "markdown":
             for f in struct["custom_fields"]:
-                if f["key"] == g_data.CUSTOM_FIELD_KEY:
+                if f["key"] == G.CUSTOM_FIELD_KEY:
                     f["value"] = rawtext
                     break
              # Not found, add new custom field.
             else:
-                field = dict(key = g_data.CUSTOM_FIELD_KEY, value = rawtext)
+                field = dict(key = G.CUSTOM_FIELD_KEY, value = rawtext)
                 struct["custom_fields"].append(field)
 
             struct["description"] = self.html_text = markdown.markdown(rawtext)
@@ -378,7 +366,7 @@ class ContentStruct(object):
 
          #Use Markdown text if exists in custom fields
         for field in struct["custom_fields"]:
-            if field["key"] == g_data.CUSTOM_FIELD_KEY:
+            if field["key"] == G.CUSTOM_FIELD_KEY:
                 meta['editformat'] = "Markdown"
                 self.raw_text = content = field["value"]
                 break
@@ -440,6 +428,7 @@ class ContentStruct(object):
 #################################################
 # Golbal Variables
 #################################################
+G = DataObject
 g_data = DataObject()
 
 #################################################
@@ -599,7 +588,7 @@ def blog_edit(edit_type, post_id):
     vim.current.window.cursor = (cp.POST_BEGIN, 0)
     vim.command('setl nomodified')
     vim.command('setl textwidth=0')
-    for v in g_data.LIST_VIEW_KEY_MAP.values():
+    for v in G.LIST_VIEW_KEY_MAP.values():
         if vim.eval("mapcheck('%s')" % v):
             vim.command('unmap <buffer> %s' % v)
 
@@ -640,7 +629,7 @@ def blog_list_on_key_press(action, edit_type):
             vim.command("setl modifiable")
             del vim.current.buffer[len(vim.current.buffer) - 1:]
             append_blog_list(edit_type)
-            vim.current.buffer.append(g_data.MARKER['more'])
+            vim.current.buffer.append(G.MARKER['more'])
             vim.command("setl nomodified")
             vim.command("setl nomodifiable")
             return
@@ -664,7 +653,7 @@ def blog_list_on_key_press(action, edit_type):
     elif action == "delete":
         blog_delete(edit_type, int(id))
 
-def append_blog_list(edit_type, count = g_data.DEFAULT_LIST_COUNT):
+def append_blog_list(edit_type, count = G.DEFAULT_LIST_COUNT):
     if edit_type.lower() == "post":
         current_posts = len(vim.current.buffer) - 1
         retrive_count = int(count) + current_posts
@@ -691,24 +680,24 @@ def blog_list(edit_type = "post", keep_type = False):
         edit_type = first_line.split()[1].lower()
 
     blog_wise_open_view()
-    vim.current.buffer[0] = g_data.MARKER["list_title"] % \
-                                dict(edit_type = edit_type.capitalize(), blog_url = g_data.blog_url)
+    vim.current.buffer[0] = G.MARKER["list_title"] % \
+                                dict(edit_type = edit_type.capitalize(), blog_url = G.blog_url)
 
     if edit_type.lower() not in ("post", "page"):
         raise VimPressException("Invalid option: %s " % edit_type)
 
-    append_blog_list(edit_type, g_data.DEFAULT_LIST_COUNT)
+    append_blog_list(edit_type, G.DEFAULT_LIST_COUNT)
 
     if edit_type == "post":
-        vim.current.buffer.append(g_data.MARKER['more'])
+        vim.current.buffer.append(G.MARKER['more'])
 
     vim.command("setl nomodified")
     vim.command("setl nomodifiable")
     vim.current.window.cursor = (2, 0)
     vim.command("map <silent> <buffer> %(enter)s :py blog_list_on_key_press('open', '%%s')<cr>" 
-            % g_data.LIST_VIEW_KEY_MAP % edit_type)
+            % G.LIST_VIEW_KEY_MAP % edit_type)
     vim.command("map <silent> <buffer> %(delete)s :py blog_list_on_key_press('delete', '%%s')<cr>" 
-            % g_data.LIST_VIEW_KEY_MAP % edit_type)
+            % G.LIST_VIEW_KEY_MAP % edit_type)
     sys.stdout.write("Press <Enter> to edit. <Delete> to move to trash.\n")
 
 @exception_check
@@ -731,7 +720,7 @@ def blog_upload_media(file_path):
 
     ran = vim.current.range
     if filetype.startswith("image"):
-        img = g_data.IMAGE_TEMPLATE % result
+        img = G.IMAGE_TEMPLATE % result
         ran.append(img)
     else:
         ran.append(result["url"])
