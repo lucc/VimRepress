@@ -1,9 +1,9 @@
-== Welcome ==
+#Welcome
 VimRepress is a plugin for managing wordpress blog from Vim, using Markdown syntax.
 
 This is a repository for Preston's fork.
 
-=== Features ===
+##Features
  * NEW/EDIT/DELETE wordpress Posts/Pages.
  * In both Markdown / HTML format.
  * Markdown text stored in the custom fields of wordpress.
@@ -13,7 +13,7 @@ This is a repository for Preston's fork.
  * wordpress.com account supported.
  * Multiple account supported.
 
-=== Commands Reference ===
+##Commands Reference
  * BlogList     [post|page]
  * BlogNew      [post|page]
  * BlogSave     [publish|draft]
@@ -26,7 +26,7 @@ This is a repository for Preston's fork.
   (Commands with a `*`, argument must be present.)
 
 
-=== CONFIGURE ===
+##CONFIGURE
 
 Edit ~/.vimrc , add a variable named VIMPRESS. Multiple blog configurations are supported.
 
