@@ -35,7 +35,7 @@
 "    - Write with Markdown, control posts format precisely.
 "    - Stores Markdown rawtext in wordpress custom fields.
 "
-" Version:	3.0
+" Version:	3.0.1
 "
 " Configure: Add blog configure into your .vimrc (password optional)
 "
