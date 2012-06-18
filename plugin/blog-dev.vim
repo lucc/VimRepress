@@ -95,4 +95,4 @@ command! -nargs=1 BlogOpen exec('py blog_guess_open(<f-args>)')
 command! -nargs=? BlogSwitch exec('py blog_config_switch(<f-args>)')
 command! -nargs=? BlogCode exec('py blog_append_code(<f-args>)')
 
-python import os; execfile(os.path.expanduser('~/.vim/plugin/blog.py'))
+python import vim, os; execfile(os.path.join(vim.eval('fnamemodify(expand("<sfile>"), ":p:h")'), "blog.py"));

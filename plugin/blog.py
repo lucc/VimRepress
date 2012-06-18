@@ -17,20 +17,23 @@ def exception_check(func):
         try:
             return func(*args, **kwargs)
         except (VimPressException, AssertionError), e:
-            sys.stderr.write(str(e))
+            echoerr(str(e))
         except (xmlrpclib.Fault, xmlrpclib.ProtocolError), e:
             if getattr(e, "faultString", None) is None:
-                sys.stderr.write("xmlrpc error: %s" % e)
+                echoerr("xmlrpc error: %s" % e)
             else:
-                sys.stderr.write("xmlrpc error: %s" % e.faultString.encode("utf-8"))
+                echoerr("xmlrpc error: %s" % e.faultString.encode("utf-8"))
         except IOError, e:
-            sys.stderr.write("network error: %s" % e)
+            echoerr("network error: %s" % e)
         except Exception, e:
-            sys.stderr.write("something wrong: %s" % e)
+            echoerr("something wrong: %s" % e)
             raise
 
 
     return __check
+
+echomsg = lambda s: vim.command('echomsg "%s"' % s)
+echoerr = lambda s: vim.command('echoerr "%s"' % s)
 
 ################################################
 # Helper Classes
@@ -124,7 +127,7 @@ class DataObject(object):
                     blog_url = config['blog_url']
                 except KeyError, e:
                     raise VimPressException("Configuration error: %s" % e)
-                sys.stdout.write("Connecting to '%s' ... " % blog_url)
+                echomsg("Connecting to '%s' ... " % blog_url)
                 if blog_password == '':
                    blog_password = vim_input("Enter password for %s" % blog_url, True)
                 config["xmlrpc_obj"] = wp_xmlrpc(blog_url, blog_username, blog_password)
@@ -138,7 +141,7 @@ class DataObject(object):
                 config["categories"] = categories
 
             vim.command('let s:completable = "%s"' % '|'.join(categories))
-            sys.stdout.write("done.\n")
+            echomsg("done.")
         return self.__xmlrpc
 
     @property
@@ -444,7 +447,7 @@ def vim_encoding_check(func):
     def __check(*args, **kw):
         orig_enc = vim.eval("&encoding") 
         if orig_enc is None:
-            sys.stdout.write("Failed to detech current vim encoding. Make sure your content encoded in UTF-8 to have vimpress work correctly.")
+            echomsg("Failed to detech current vim encoding. Make sure your content encoded in UTF-8 to have vimpress work correctly.")
         elif orig_enc != "utf-8":
             modified = vim.eval("&modified")
             buf_list = '\n'.join(vim.current.buffer).decode(orig_enc).encode('utf-8').splitlines()
@@ -548,7 +551,7 @@ def blog_save(pub = None):
     cp.update_buffer_meta()
     g_data.current_post = cp
     notify = "%s ID=%s saved with status '%s'" % (cp.post_status, cp.post_id, cp.post_status)
-    sys.stdout.write(notify)
+    echomsg(notify)
     vim.command('setl nomodified')
 
 
@@ -602,8 +605,8 @@ def blog_delete(edit_type, post_id):
     if edit_type.lower() not in ("post", "page"):
         raise VimPressException("Invalid option: %s " % edit_type)
     deleted = getattr(g_data.xmlrpc, "delete_" + edit_type)(post_id)
-    assert deleted is True, "There was a problem deleting the %s.\n" % edit_type
-    sys.stdout.write("Deleted %s id %s. \n" % (edit_type, str(post_id)))
+    assert deleted is True, "There was a problem deleting the %s." % edit_type
+    echomsg("Deleted %s id %s. " % (edit_type, str(post_id)))
     g_data.xmlrpc.cache_remove_post(post_id)
     blog_list(edit_type)
 
@@ -698,7 +701,7 @@ def blog_list(edit_type = "post", keep_type = False):
             % G.LIST_VIEW_KEY_MAP % edit_type)
     vim.command("map <silent> <buffer> %(delete)s :py blog_list_on_key_press('delete', '%%s')<cr>" 
             % G.LIST_VIEW_KEY_MAP % edit_type)
-    sys.stdout.write("Press <Enter> to edit. <Delete> to move to trash.\n")
+    echomsg("Press <Enter> to edit. <Delete> to move to trash.")
 
 @exception_check
 @vim_encoding_check
@@ -760,7 +763,7 @@ def blog_preview(pub = "local"):
     elif pub in ("publish", "draft"):
         cp.remote_preview(pub)
         if pub == "draft":
-            sys.stdout.write("\nYou have to login in the browser to preview the post when save as draft.")
+            echomsg("You have to login in the browser to preview the post when save as draft.")
     else:
         raise VimPressException("Invalid option: %s " % pub)
 
@@ -828,5 +831,5 @@ def blog_config_switch(index = -1, refresh_list = False):
     g_data.conf_index = index
     if refresh_list:
         blog_list(keep_type = True)
-    sys.stdout.write("Vimpress switched to '%s'@'%s'\n" % (g_data.blog_username, g_data.blog_url))
+    echomsg("Vimpress switched to '%s'@'%s'" % (g_data.blog_username, g_data.blog_url))
 
