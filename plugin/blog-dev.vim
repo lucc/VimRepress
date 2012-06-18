@@ -65,27 +65,6 @@ function! CompEditType(ArgLead, CmdLine, CursorPos)
   return "post\npage\n"
 endfunction
 
-fun! Completable(findstart, base)
-  if a:findstart
-    " locate the start of the word
-    let line = getline('.')
-    let start = col('.') - 1
-    while start > 0 && line[start - 1] =~ '\a'
-      let start -= 1
-    endwhile
-    return start
-  else
-    " find matching items
-    let res = []
-    for m in split(s:completable,"|")
-      if m =~ '^' . a:base
-        call add(res, m)
-      endif
-    endfor
-    return res
-  endif
-endfun
-
 command! -nargs=? -complete=custom,CompEditType BlogList exec('py blog_list(<f-args>)')
 command! -nargs=? -complete=custom,CompEditType BlogNew exec('py blog_new(<f-args>)')
 command! -nargs=? -complete=custom,CompSave BlogSave exec('py blog_save(<f-args>)')
