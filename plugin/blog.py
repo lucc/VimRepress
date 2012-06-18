@@ -147,7 +147,7 @@ class DataObject(object):
 
     @property
     def config(self):
-        if self.__config is None:
+        if self.__config is None or len(self.__config) == 0:
 
             confpsr = SafeConfigParser()
             confile = os.path.expanduser("~/.vimpressrc")
@@ -160,7 +160,10 @@ class DataObject(object):
                     values = [confpsr.get(sec, i) for i in conf_options]
                     conf_list.append(dict(zip(conf_options, values)))
 
-                self.__config = conf_list
+                if len(conf_list) > 0:
+                    self.__config = conf_list
+                else:
+                    raise VimPressException("You have an empty `~/.vimpressrc', thus no configuration will be read. If you still have your account info in `.vimrc', remove `~/.vimpressrc' and try again.")
 
             else:
                 try:
@@ -176,10 +179,12 @@ class DataObject(object):
                                 sec = "Blog%d" % i
                                 confpsr.add_section(sec)
                                 for i in conf_options:
-                                    confpsr.set(sec, i, c[i])
+                                    confpsr.set(sec, i, c.get(i, ''))
                             confpsr.write(f)
 
-            if self.__config is None:
+                        echomsg("Your Blog accounts are now copied to `~/.vimpressrc', definding account info in `.vimrc` is now obsolesced, and may lead to secret leak if you share your vim configuration with public. Please REMOVE the `let VIMPRESS =' part in your `.vimrc'. ")
+
+            if self.__config is None or len(self.__config) == 0:
                 raise VimPressException("Could not find vimpress configuration. Please read ':help vimpress' for more information.")
 
         return self.__config
