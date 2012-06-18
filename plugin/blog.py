@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
-import urllib, vim, xmlrpclib, sys, re, os, mimetypes, webbrowser, tempfile 
+import vim
+import urllib
+import xmlrpclib
+import re
+import os
+import mimetypes
+import webbrowser
+import tempfile
 from ConfigParser import SafeConfigParser
+
 try:
     import markdown
 except ImportError:
@@ -9,7 +17,10 @@ except ImportError:
     except ImportError:
         class markdown_stub(object):
             def markdown(self, n):
-                raise VimPressException("The package python-markdown is required and is either not present or not properly installed.")
+                raise VimPressException("The package python-markdown is "
+                        "required and is either not present or not properly "
+                        "installed.")
+
         markdown = markdown_stub()
 
 
@@ -30,7 +41,6 @@ def exception_check(func):
             echoerr("something wrong: %s" % e)
             raise
 
-
     return __check
 
 echomsg = lambda s: vim.command('echomsg "%s"' % s)
@@ -40,20 +50,26 @@ echoerr = lambda s: vim.command('echoerr "%s"' % s)
 # Helper Classes
 #################################################
 
+
 class VimPressException(Exception):
     pass
+
 
 class DataObject(object):
 
     #CONST
     DEFAULT_LIST_COUNT = "15"
-    IMAGE_TEMPLATE = '<a href="%(url)s"><img title="%(file)s" alt="%(file)s" src="%(url)s" class="aligncenter" /></a>'
-    MARKER = dict(bg = "=========== Meta ============", 
-                  mid = "=============================", 
-                  ed = "========== Content ==========",
-                  more = '"====== Press Here for More ======',
-                  list_title = '"====== %(edit_type)s List in %(blog_url)s =========')
-    LIST_VIEW_KEY_MAP = dict(enter = "<enter>", delete = "<delete>")
+    IMAGE_TEMPLATE = '<a href="%(url)s">' \
+                     '<img title="%(file)s" alt="%(file)s" src="%(url)s"' \
+                     'class="aligncenter" /></a>'
+    MARKER = dict(bg="=========== Meta ============",
+              mid="=============================",
+              ed="========== Content ==========",
+              more='"====== Press Here for More ======',
+              list_title='"====== '
+                '%(edit_type)s List in %(blog_url)s =========')
+
+    LIST_VIEW_KEY_MAP = dict(enter="<enter>", delete="<delete>")
     CUSTOM_FIELD_KEY = "mkd_text"
 
     #Temp variables.
@@ -66,9 +82,10 @@ class DataObject(object):
 
     blog_username = property(lambda self: self.xmlrpc.username)
     blog_url = property(lambda self: self.xmlrpc.blog_url)
-    conf_index = property(lambda self:self.__conf_index)
-    current_post_id = property(lambda self:self.xmlrpc.current_post_id, lambda self, d: setattr(self.xmlrpc, "current_post_id", d))
-    post_cache = property(lambda self: self.xmlrpc.post_cache) 
+    conf_index = property(lambda self: self.__conf_index)
+    current_post_id = property(lambda self: self.xmlrpc.current_post_id,
+            lambda self, d: setattr(self.xmlrpc, "current_post_id", d))
+    post_cache = property(lambda self: self.xmlrpc.post_cache)
 
     @property
     def current_post(self):
@@ -90,10 +107,11 @@ class DataObject(object):
         post_id = str(data.post_id)
 
          # New post, just post first time
-        if self.current_post_id == '' and post_id != '' and self.post_cache.has_key(''):
+        if self.current_post_id == '' and \
+                post_id != '' and '' in self.post_cache:
             self.post_cache.pop('')
         self.current_post_id = post_id
-        if not self.post_cache.has_key(post_id):
+        if post_id not in self.post_cache:
             self.post_cache[post_id] = data
 
     @conf_index.setter
@@ -130,15 +148,18 @@ class DataObject(object):
                     raise VimPressException("Configuration error: %s" % e)
                 echomsg("Connecting to '%s' ... " % blog_url)
                 if blog_password == '':
-                   blog_password = vim_input("Enter password for %s" % blog_url, True)
-                config["xmlrpc_obj"] = wp_xmlrpc(blog_url, blog_username, blog_password)
+                    blog_password = vim_input(
+                            "Enter password for %s" % blog_url, True)
+                config["xmlrpc_obj"] = wp_xmlrpc(blog_url,
+                        blog_username, blog_password)
 
             self.__xmlrpc = config["xmlrpc_obj"]
 
             # Setting tags and categories for completefunc
             categories = config.get("categories", None)
             if categories is None:
-                categories = [i["description"].encode("utf-8") for i in self.xmlrpc.get_categories()]
+                categories = [i["description"].encode("utf-8")
+                        for i in self.xmlrpc.get_categories()]
                 config["categories"] = categories
 
             vim.command('let s:completable = "%s"' % '|'.join(categories))
@@ -163,7 +184,12 @@ class DataObject(object):
                 if len(conf_list) > 0:
                     self.__config = conf_list
                 else:
-                    raise VimPressException("You have an empty `~/.vimpressrc', thus no configuration will be read. If you still have your account info in `.vimrc', remove `~/.vimpressrc' and try again.")
+                    raise VimPressException(
+                            "You have an empty `~/.vimpressrc', "
+                            "thus no configuration will be read. "
+                            "If you still have your account info in "
+                            "`.vimrc', remove `~/.vimpressrc' and "
+                            "try again.")
 
             else:
                 try:
@@ -171,23 +197,33 @@ class DataObject(object):
                 except vim.error:
                     pass
                 else:
-                    # wirte config to `~/.vimpressrc`, 
+                    # wirte config to `~/.vimpressrc`,
                     # coding account in .vimrc is obsolesced.
-                    if not os.path.exists(confile) and self.__config is not None:
+                    if not os.path.exists(confile) and \
+                            self.__config is not None:
                         with open(confile, 'w') as f:
-                            for i,c in enumerate(self.__config):
+                            for i, c in enumerate(self.__config):
                                 sec = "Blog%d" % i
                                 confpsr.add_section(sec)
                                 for i in conf_options:
                                     confpsr.set(sec, i, c.get(i, ''))
                             confpsr.write(f)
 
-                        echomsg("Your Blog accounts are now copied to `~/.vimpressrc', definding account info in `.vimrc` is now obsolesced, and may lead to secret leak if you share your vim configuration with public. Please REMOVE the `let VIMPRESS =' part in your `.vimrc'. ")
+                        echomsg("Your Blog accounts are now copied to "
+                                "`~/.vimpressrc', definding account info "
+                                "in `.vimrc` is now obsolesced, and may "
+                                "lead to secret leak if you share your "
+                                "vim configuration with public. Please "
+                                "REMOVE the `let VIMPRESS =' code in your "
+                                "`.vimrc'. ")
 
             if self.__config is None or len(self.__config) == 0:
-                raise VimPressException("Could not find vimpress configuration. Please read ':help vimpress' for more information.")
+                raise VimPressException("Could not find vimpress "
+                        "configuration. Please read ':help vimpress' "
+                        "for more information.")
 
         return self.__config
+
 
 class wp_xmlrpc(object):
 
@@ -201,8 +237,9 @@ class wp_xmlrpc(object):
         self.mt_api = p.mt
         self.demo_api = p.demo
 
-        assert self.demo_api.sayHello() == "Hello!", "XMLRPC Error with communication with '%s'@'%s'" % \
-                (username, blog_url)
+        assert self.demo_api.sayHello() == "Hello!", \
+                    "XMLRPC Error with communication with '%s'@'%s'" % \
+                    (username, blog_url)
 
         self.cache_reset()
         self.post_cache = dict()
@@ -225,16 +262,18 @@ class wp_xmlrpc(object):
             self.username, self.password, post_struct)
 
     get_post = lambda self, post_id: self.mw_api.getPost(post_id,
-            self.username, self.password) 
+            self.username, self.password)
 
-    edit_post = lambda self, post_id, post_struct: self.mw_api.editPost(post_id,
-            self.username, self.password, post_struct)
+    edit_post = lambda self, post_id, post_struct: \
+            self.mw_api.editPost(post_id, self.username,
+                    self.password, post_struct)
 
-    delete_post = lambda self, post_id: self.mw_api.deletePost('', post_id, self.username,
-            self.password, '') 
+    delete_post = lambda self, post_id: self.mw_api.deletePost('',
+            post_id, self.username, self.password, '')
 
-    def get_recent_post_titles(self, retrive_count = 0):
-        if retrive_count > len(self.__cache_post_titles) and not self.is_reached_title_max:
+    def get_recent_post_titles(self, retrive_count=0):
+        if retrive_count > len(self.__cache_post_titles) and \
+                not self.is_reached_title_max:
             self.__cache_post_titles = self.mt_api.getRecentPostTitles('',
                     self.username, self.password, retrive_count)
             if len(self.__cache_post_titles) < retrive_count:
@@ -242,17 +281,22 @@ class wp_xmlrpc(object):
 
         return self.__cache_post_titles
 
-    get_categories = lambda self:self.mw_api.getCategories('', self.username, self.password)
+    get_categories = lambda self: self.mw_api.getCategories('',
+            self.username, self.password)
 
-    new_media_object = lambda self, object_struct: self.mw_api.newMediaObject('', self.username,
+    new_media_object = lambda self, object_struct: \
+            self.mw_api.newMediaObject('', self.username,
             self.password, object_struct)
 
-    get_page = lambda self, page_id: self.wp_api.getPage('', page_id, self.username, self.password) 
+    get_page = lambda self, page_id: self.wp_api.getPage('',
+            page_id, self.username, self.password)
 
     delete_page = lambda self, page_id: self.wp_api.deletePage('',
-            self.username, self.password, page_id) 
+            self.username, self.password, page_id)
 
-    get_page_list = lambda self: self.wp_api.getPageList('', self.username, self.password) 
+    get_page_list = lambda self: self.wp_api.getPageList('',
+            self.username, self.password)
+
 
 class ContentStruct(object):
 
@@ -264,29 +308,33 @@ class ContentStruct(object):
     def META_TEMPLATE(self):
         KEYS_BASIC = ("StrID", "Title", "Slug")
         KEYS_EXT = ("Cats", "Tags")
-        KEYS_BLOG = ("EditType", "EditFormat", "BlogAddr") 
+        KEYS_BLOG = ("EditType", "EditFormat", "BlogAddr")
 
-        pt = ['"{k:<6}: {{{t}}}'.format(k=p,t=p.lower()) for p in KEYS_BASIC]
+        pt = ['"{k:<6}: {{{t}}}'.format(k=p, t=p.lower()) for p in KEYS_BASIC]
         if self.EDIT_TYPE == "post":
-            pt.extend(['"{k:<6}: {{{t}}}'.format(k=p,t=p.lower()) for p in KEYS_EXT])
+            pt.extend(['"{k:<6}: {{{t}}}'.format(k=p, t=p.lower())
+                    for p in KEYS_EXT])
         pm = "\n".join(pt)
-        bm = "\n".join(['"{k:<11}: {{{t}}}'.format(k=p,t=p.lower()) for p in KEYS_BLOG])
+        bm = "\n".join(['"{k:<11}: {{{t}}}'.format(k=p, t=p.lower())
+            for p in KEYS_BLOG])
         return u'"{bg}\n{0}\n"{mid}\n{1}\n"{ed}\n'.format(pm, bm, **G.MARKER)
 
-    POST_BEGIN = property(lambda self:len(self.META_TEMPLATE.splitlines()))
+    POST_BEGIN = property(lambda self: len(self.META_TEMPLATE.splitlines()))
     raw_text = ''
     html_text = ''
 
-    def __init__(self, edit_type = None, post_id = None):
+    def __init__(self, edit_type=None, post_id=None):
 
         self.EDIT_TYPE = edit_type
-        self.buffer_meta = dict(strid = '', edittype = edit_type, blogaddr = g_data.blog_url)
-        self.post_struct_meta = dict(title = '',
-                wp_slug = '',
-                post_type = edit_type,
-                description = '',
-                custom_fields = [],
-                post_status = 'draft')
+        self.buffer_meta = dict(strid='', edittype=edit_type,
+                blogaddr=g_data.blog_url)
+
+        self.post_struct_meta = dict(title='',
+                wp_slug='',
+                post_type=edit_type,
+                description='',
+                custom_fields=[],
+                post_status='draft')
 
         if post_id is not None:
             self.refresh_from_wp(post_id)
@@ -297,7 +345,7 @@ class ContentStruct(object):
     def parse_buffer(self):
         start = 0
         while not vim.current.buffer[start][1:].startswith(G.MARKER['bg']):
-            start +=1
+            start += 1
 
         end = start + 1
         while not vim.current.buffer[end][1:].startswith(G.MARKER['ed']):
@@ -310,16 +358,19 @@ class ContentStruct(object):
         if self.EDIT_TYPE != self.buffer_meta["edittype"]:
             self.EDIT_TYPE = self.buffer_meta["edittype"]
 
-        self.buffer_meta["content"] = '\n'.join(vim.current.buffer[end + 1:]).decode('utf-8')
+        self.buffer_meta["content"] = '\n'.join(
+                vim.current.buffer[end + 1:]).decode('utf-8')
 
     def fill_buffer(self):
-        meta = dict(strid = "", title = "", slug = "", 
-                cats = "", tags = "", editformat = "Markdown", edittype = "") 
+        meta = dict(strid="", title="", slug="",
+                cats="", tags="", editformat="Markdown", edittype="")
         meta.update(self.buffer_meta)
-        meta_text = self.META_TEMPLATE.format(**meta).encode('utf-8').splitlines()
+        meta_text = self.META_TEMPLATE.format(**meta)\
+                .encode('utf-8').splitlines()
         vim.current.buffer[0] = meta_text[0]
         vim.current.buffer.append(meta_text[1:])
-        content = self.buffer_meta.get("content", ' ').encode('utf-8').splitlines()
+        content = self.buffer_meta.get("content", ' ')\
+                .encode('utf-8').splitlines()
         vim.current.buffer.append(content)
 
     def update_buffer_meta(self):
@@ -330,7 +381,7 @@ class ContentStruct(object):
         kw = self.buffer_meta
         start = 0
         while not vim.current.buffer[start][1:].startswith(G.MARKER['bg']):
-            start +=1
+            start += 1
 
         end = start + 1
         while not vim.current.buffer[end][1:].startswith(G.MARKER['ed']):
@@ -348,13 +399,12 @@ class ContentStruct(object):
         meta = self.buffer_meta
         struct = self.post_struct_meta
 
-        struct.update(title = meta["title"],
-                wp_slug = meta["slug"],
-                post_type = self.EDIT_TYPE)
+        struct.update(title=meta["title"],
+                wp_slug=meta["slug"], post_type=self.EDIT_TYPE)
 
         if self.EDIT_TYPE == "post":
-            struct.update(categories = meta["cats"].split(','), 
-                mt_keywords = meta["tags"].split(','))
+            struct.update(categories=meta["cats"].split(','),
+                    mt_keywords=meta["tags"].split(','))
 
         self.rawtext = rawtext = meta["content"]
 
@@ -366,32 +416,30 @@ class ContentStruct(object):
                     break
              # Not found, add new custom field.
             else:
-                field = dict(key = G.CUSTOM_FIELD_KEY, value = rawtext)
+                field = dict(key=G.CUSTOM_FIELD_KEY, value=rawtext)
                 struct["custom_fields"].append(field)
 
             struct["description"] = self.html_text = markdown.markdown(rawtext)
         else:
             struct["description"] = self.html_text = rawtext
 
-
-
     def refresh_from_wp(self, post_id):
-
          # get from wp
-        self.post_struct_meta = struct = getattr(g_data.xmlrpc, "get_" + self.EDIT_TYPE)(post_id)
+        self.post_struct_meta = struct = getattr(g_data.xmlrpc,
+                "get_" + self.EDIT_TYPE)(post_id)
 
          # struct buffer meta
-        meta = dict( editformat = "HTML",
-                title = struct["title"], 
-                slug = struct["wp_slug"])
+        meta = dict(editformat="HTML",
+                title=struct["title"],
+                slug=struct["wp_slug"])
 
         if self.EDIT_TYPE == "post":
-            meta.update(strid = str(struct["postid"]),
-            cats = ", ".join(struct["categories"]),
-            tags = struct["mt_keywords"])
+            meta.update(strid=str(struct["postid"]),
+            cats=", ".join(struct["categories"]),
+            tags=struct["mt_keywords"])
             MORE_KEY = "mt_text_more"
         else:
-            meta.update(strid = str(struct["page_id"]))
+            meta.update(strid=str(struct["page_id"]))
             MORE_KEY = "text_more"
 
         self.html_text = content = struct["description"]
@@ -415,25 +463,28 @@ class ContentStruct(object):
         meta["content"] = content
 
         self.buffer_meta.update(meta)
-                
+
     def save_post(self):
         ps = self.post_struct_meta
         if self.EDIT_TYPE == "post":
-            if ps.get("postid", '') == '' and self.post_id == '': 
+            if ps.get("postid", '') == '' and self.post_id == '':
                 post_id = g_data.xmlrpc.new_post(ps)
             else:
-                post_id = ps["postid"] if ps.has_key("postid") else int(self.post_id)
+                post_id = ps["postid"] if "postid" in ps \
+                        else int(self.post_id)
                 g_data.xmlrpc.edit_post(post_id, ps)
         else:
-            if ps.get("page_id", '') == '' and self.post_id == '': 
+            if ps.get("page_id", '') == '' and self.post_id == '':
                 post_id = g_data.xmlrpc.new_post(ps)
             else:
-                post_id = ps["page_id"] if ps.has_key("page_id") else int(self.post_id)
+                post_id = ps["page_id"] if "page_id" in ps \
+                        else int(self.post_id)
                 g_data.xmlrpc.edit_post(post_id, ps)
 
         self.refresh_from_wp(post_id)
 
-    post_status = property(lambda self:self.post_struct_meta[self.EDIT_TYPE + "_status"])
+    post_status = property(lambda self:
+            self.post_struct_meta[self.EDIT_TYPE + "_status"])
 
     @post_status.setter
     def post_status(self, data):
@@ -450,18 +501,20 @@ class ContentStruct(object):
         """
         if g_data.vimpress_temp_dir == '':
             g_data.vimpress_temp_dir = tempfile.mkdtemp(suffix="vimpress")
-        
+
         html = \
                 u"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"> <title>Vimpress Local Preview: %(title)s</title> <style type="text/css"> ul, li { margin: 1em; } :link,:visited { text-decoration:none } h1,h2,h3,h4,h5,h6,pre,code { font-size:1.1em; } h1 {font-size: 1.8em;} h2 {font-size: 1.5em;} h3{font-size: 1.3em;} h4{font-size: 1.2em;} h5 {font-size: 1.1em;} a img,:link img,:visited img { border:none } body { margin:0 auto; width:770px; font-family: Helvetica, Arial, Sans-serif; font-size:12px; color:#444; } </style> </meta> </head> <body> %(content)s </body> </html>
-""" % dict(content = self.html_text, title = self.buffer_meta["title"])
-        with open(os.path.join(g_data.vimpress_temp_dir, "vimpress_temp.html"), 'w') as f:
+""" % dict(content=self.html_text, title=self.buffer_meta["title"])
+        with open(os.path.join(
+                g_data.vimpress_temp_dir, "vimpress_temp.html"), 'w') as f:
             f.write(html.encode('utf-8'))
         webbrowser.open("file://%s" % f.name)
 
-    def remote_preview(self, pub = "draft"):
+    def remote_preview(self, pub="draft"):
         self.post_status = pub
         self.save_post()
-        webbrowser.open("%s?p=%s&preview=true" % (g_data.blog_url, self.post_id))
+        webbrowser.open("%s?p=%s&preview=true" %
+                (g_data.blog_url, self.post_id))
 
 
 #################################################
@@ -474,16 +527,19 @@ g_data = DataObject()
 # Helper Functions
 #################################################
 
+
 def vim_encoding_check(func):
     """
     Decorator.
-    Check vim environment. wordpress via xmlrpc only support unicode data, setting vim
-        to utf-8 for all data compatible.
+    Check vim environment. wordpress via xmlrpc only support unicode data,
+    setting vim to utf-8 for all data compatible.
     """
     def __check(*args, **kw):
-        orig_enc = vim.eval("&encoding") 
+        orig_enc = vim.eval("&encoding")
         if orig_enc is None:
-            echomsg("Failed to detech current vim encoding. Make sure your content encoded in UTF-8 to have vimpress work correctly.")
+            echomsg("Failed to detech current vim encoding. Make sure your"
+                    " content encoded in UTF-8 to have vimpress work "
+                    "correctly.")
         elif orig_enc != "utf-8":
             modified = vim.eval("&modified")
             buf_list = '\n'.join(vim.current.buffer).decode(orig_enc).encode('utf-8').splitlines()
@@ -496,6 +552,7 @@ def vim_encoding_check(func):
                 vim.command('setl nomodified')
         return func(*args, **kw)
     return __check
+
 
 def view_switch(view = "", assert_view = "", reset = False):
     """
@@ -536,12 +593,13 @@ def view_switch(view = "", assert_view = "", reset = False):
         return __run
     return switch
 
+
 def blog_wise_open_view():
     """
     Wisely decides whether to wipe out the content of current buffer or open a new splited window.
     """
     if vim.current.buffer.name is None and \
-            (vim.eval('&modified') == '0' or \
+            (vim.eval('&modified') == '0' or
                 len(vim.current.buffer) == 1):
         vim.command('setl modifiable')
         del vim.current.buffer[:]
@@ -551,13 +609,13 @@ def blog_wise_open_view():
     vim.command('setl syntax=blogsyntax')
     vim.command('setl completefunc=Completable')
 
+
 @vim_encoding_check
 def vim_input(message = 'input', secret = False):
     vim.command('call inputsave()')
     vim.command("let user_input = %s('%s :')" % (("inputsecret" if secret else "input"), message))
     vim.command('call inputrestore()')
     return vim.eval('user_input')
-
 
 
 #################################################
@@ -603,8 +661,9 @@ def blog_new(edit_type = "post", currentContent = None):
         raise VimPressException("Invalid option: %s " % edit_type)
     blog_wise_open_view()
     g_data.current_post = ContentStruct(edit_type = edit_type)
-    cp = g_data.current_post 
+    cp = g_data.current_post
     cp.fill_buffer()
+
 
 @view_switch(view = "edit")
 def blog_edit(edit_type, post_id):
@@ -618,7 +677,7 @@ def blog_edit(edit_type, post_id):
         raise VimPressException("Invalid option: %s " % edit_type)
     post_id = str(post_id)
 
-    if g_data.post_cache.has_key(post_id):
+    if post_id in g_data.post_cache:
         cp = g_data.current_post = g_data.post_cache[post_id]
     else:
         cp = g_data.current_post = ContentStruct(edit_type = edit_type, post_id = post_id)
@@ -630,6 +689,7 @@ def blog_edit(edit_type, post_id):
     for v in G.LIST_VIEW_KEY_MAP.values():
         if vim.eval("mapcheck('%s')" % v):
             vim.command('unmap <buffer> %s' % v)
+
 
 @view_switch(assert_view = "list")
 def blog_delete(edit_type, post_id):
@@ -646,8 +706,9 @@ def blog_delete(edit_type, post_id):
     g_data.xmlrpc.cache_remove_post(post_id)
     blog_list(edit_type)
 
+
 @exception_check
-@view_switch(assert_view = "list") 
+@view_switch(assert_view = "list")
 def blog_list_on_key_press(action, edit_type):
     """
     Calls blog open on the current line of a listing buffer.
@@ -675,12 +736,11 @@ def blog_list_on_key_press(action, edit_type):
         else:
             raise VimPressException("Move cursor to a post/page line and press Enter.")
 
-
     if len(title) > 30:
         title = title[:30] + ' ...'
 
     if action.lower() == "delete":
-        confirm = vim_input("Confirm Delete [%s]: %s? [yes/NO]" % (id,title))
+        confirm = vim_input("Confirm Delete [%s]: %s? [yes/NO]" % (id, title))
         assert confirm.lower() == 'yes', "Delete Aborted."
 
     vim.command("setl modifiable")
@@ -692,18 +752,21 @@ def blog_list_on_key_press(action, edit_type):
     elif action == "delete":
         blog_delete(edit_type, int(id))
 
+
 def append_blog_list(edit_type, count = G.DEFAULT_LIST_COUNT):
     if edit_type.lower() == "post":
         current_posts = len(vim.current.buffer) - 1
         retrive_count = int(count) + current_posts
         posts_titles = g_data.xmlrpc.get_recent_post_titles(retrive_count)
 
-        vim.current.buffer.append(\
-                [(u"%(postid)s\t%(title)s" % p).encode('utf-8') for p in posts_titles[current_posts:]])
+        vim.current.buffer.append(
+                [(u"%(postid)s\t%(title)s" % p).encode('utf-8')
+                    for p in posts_titles[current_posts:]])
     else:
         pages = g_data.xmlrpc.get_page_list()
-        vim.current.buffer.append(\
+        vim.current.buffer.append(
             [(u"%(page_id)s\t%(page_title)s" % p).encode('utf-8') for p in pages])
+
 
 @exception_check
 @vim_encoding_check
@@ -715,7 +778,7 @@ def blog_list(edit_type = "post", keep_type = False):
     """
     if keep_type:
         first_line = vim.current.buffer[0]
-        assert first_line.find("List") != -1,"Failed to detect current list type."
+        assert first_line.find("List") != -1, "Failed to detect current list type."
         edit_type = first_line.split()[1].lower()
 
     blog_wise_open_view()
@@ -733,11 +796,12 @@ def blog_list(edit_type = "post", keep_type = False):
     vim.command("setl nomodified")
     vim.command("setl nomodifiable")
     vim.current.window.cursor = (2, 0)
-    vim.command("map <silent> <buffer> %(enter)s :py blog_list_on_key_press('open', '%%s')<cr>" 
+    vim.command("map <silent> <buffer> %(enter)s :py blog_list_on_key_press('open', '%%s')<cr>"
             % G.LIST_VIEW_KEY_MAP % edit_type)
-    vim.command("map <silent> <buffer> %(delete)s :py blog_list_on_key_press('delete', '%%s')<cr>" 
+    vim.command("map <silent> <buffer> %(delete)s :py blog_list_on_key_press('delete', '%%s')<cr>"
             % G.LIST_VIEW_KEY_MAP % edit_type)
     echomsg("Press <Enter> to edit. <Delete> to move to trash.")
+
 
 @exception_check
 @vim_encoding_check
@@ -765,6 +829,7 @@ def blog_upload_media(file_path):
         ran.append(result["url"])
     ran.append('')
 
+
 @exception_check
 @vim_encoding_check
 @view_switch(assert_view = "edit")
@@ -777,10 +842,11 @@ def blog_append_code(code_type = ""):
     else:
         code_type = (code_type, ' line="1"')
     html = html % code_type
-    row, col = vim.current.window.cursor 
+    row, col = vim.current.window.cursor
     code_block = html.splitlines()
     vim.current.range.append(code_block)
     vim.current.window.cursor = (row + len(code_block), 0)
+
 
 @exception_check
 @vim_encoding_check
@@ -808,7 +874,7 @@ def blog_preview(pub = "local"):
 def blog_guess_open(what):
     """
     Tries several methods to get the post id from different user inputs, such as args, url, postid etc.
-    """ 
+    """
     post_id = ''
     blog_index = -1
     if type(what) is str:
@@ -857,6 +923,7 @@ def blog_guess_open(what):
 
         blog_edit("post", post_id)
 
+
 @exception_check
 @vim_encoding_check
 @view_switch()
@@ -868,4 +935,3 @@ def blog_config_switch(index = -1, refresh_list = False):
     if refresh_list:
         blog_list(keep_type = True)
     echomsg("Vimpress switched to '%s'@'%s'" % (g_data.blog_username, g_data.blog_url))
-
