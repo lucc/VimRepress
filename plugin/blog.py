@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import urllib, vim, xmlrpclib, sys, re, os, mimetypes, webbrowser, tempfile 
+from ConfigParser import SafeConfigParser
 try:
     import markdown
 except ImportError:
@@ -147,10 +148,40 @@ class DataObject(object):
     @property
     def config(self):
         if self.__config is None:
-            try:
-                self.__config = vim.eval("VIMPRESS")
-            except vim.error:
+
+            confpsr = SafeConfigParser()
+            confile = os.path.expanduser("~/.vimpressrc")
+            conf_options = ("blog_url", "username", "password")
+
+            if os.path.exists(confile):
+                conf_list = []
+                confpsr.read(confile)
+                for sec in confpsr.sections():
+                    values = [confpsr.get(sec, i) for i in conf_options]
+                    conf_list.append(dict(zip(conf_options, values)))
+
+                self.__config = conf_list
+
+            else:
+                try:
+                    self.__config = vim.eval("VIMPRESS")
+                except vim.error:
+                    pass
+                else:
+                    # wirte config to `~/.vimpressrc`, 
+                    # coding account in .vimrc is obsolesced.
+                    if not os.path.exists(confile) and self.__config is not None:
+                        with open(confile, 'w') as f:
+                            for i,c in enumerate(self.__config):
+                                sec = "Blog%d" % i
+                                confpsr.add_section(sec)
+                                for i in conf_options:
+                                    confpsr.set(sec, i, c[i])
+                            confpsr.write(f)
+
+            if self.__config is None:
                 raise VimPressException("Could not find vimpress configuration. Please read ':help vimpress' for more information.")
+
         return self.__config
 
 class wp_xmlrpc(object):
