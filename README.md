@@ -26,7 +26,7 @@ VimRepress is a plugin for managing wordpress blog from Vim, using Markdown synt
 
 ##CONFIGURE
 
-Create file `~/.vimpressrc' in the following format:
+Create file `~/.vimpressrc` in the following format:
 
     [Blog0]
     blog_url = http://a-blog.com/
@@ -42,5 +42,5 @@ Hardcoding the password is optional. If a password is not provided the plugin wi
 
 ###For Upgraded Users
 
-Defining Account info in `.vimrc` is now obsolesced, if you have correspond defination in `.vimrc' (for older version vimpress), they will automaticly copied into `~/.vimpressrc', now you're safe to remove the VIMPRESS defination in `.vimrc'.
+Defining Account info in `.vimrc` is now obsolesced, if you have correspond defination in `.vimrc` (for older version vimpress), they will automaticly copied into `~/.vimpressrc`, now you're safe to remove the VIMPRESS defination in `.vimrc`.
 
