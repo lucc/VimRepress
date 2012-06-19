@@ -15,13 +15,14 @@
 " along with this program; if not, write to the Free Software Foundation,
 " Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
 " 
-" Maintainer:	Adrien Friggeri <adrien@friggeri.net>
+" Contributors:	Adrien Friggeri <adrien@friggeri.net>
 "               Pigeond <http://pigeond.net/blog/>
 "               Justin Sattery <justin.slattery@fzysqr.com>
 "               Lenin Lee <lenin.lee@gmail.com>
 "               Conner McDaniel <connermcd@gmail.com>
 "
-" Forked By:   Preston M.[BOYPT] <pentie@gmail.com>
+" Forked By: Preston M.[BOYPT] <pentie@gmail.com>
+" Repository: https://bitbucket.org/pentie/vimrepress
 "
 " URL:		http://www.friggeri.net/projets/vimblog/
 "           http://pigeond.net/blog/2009/05/07/vimpress-again/
@@ -35,17 +36,20 @@
 "    - Write with Markdown, control posts format precisely.
 "    - Stores Markdown rawtext in wordpress custom fields.
 "
-" Version:	3.0.1
+" Version:	3.2.0
 "
-" Configure: Add blog configure into your .vimrc (password optional)
+" Config: Create account configure as `~/.vimpressrc' in the following
+" format:
 "
-" let VIMPRESS=[{'username':'user',
-"               \'password':'pass',
-"               \'blog_url':'http://your-first-blog.com/'
-"               \},
-"               \{'username':'user',
-"               \'blog_url':'http://your-second-blog.com/'
-"               \}]
+"[Blog0]
+"blog_url = http://a-blog.com/
+"username = admin
+"password = 123456
+"
+"[Blog1]
+"blog_url = https://someone.wordpress.com/
+"username = someone
+"password =
 "
 "#######################################################################
 
