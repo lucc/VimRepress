@@ -1,8 +1,6 @@
 #Welcome
 VimRepress is a plugin for managing wordpress blog from Vim, using Markdown syntax.
 
-This is a repository for Preston's fork.
-
 ##Features
  * NEW/EDIT/DELETE wordpress Posts/Pages.
  * In both Markdown / HTML format.
@@ -28,18 +26,21 @@ This is a repository for Preston's fork.
 
 ##CONFIGURE
 
-Edit ~/.vimrc , add a variable named VIMPRESS. Multiple blog configurations are supported.
+Create file `~/.vimpressrc' in the following format:
 
-Example:
+    [Blog0]
+    blog_url = http://a-blog.com/
+    username = admin
+    password = 123456
 
-    let VIMPRESS = [{'username':'user',
-                    \'password':'pass',
-                    \'blog_url':'http://your-first-blog.com/'
-                    \},
-                    \{'username':'user',
-                    \'blog_url':'http://your-second-blog.com/'
-                    \}]
-
+    [BlogWhatEver]
+    blog_url = https://someone.wordpress.com/
+    username = someone
+    password =
 
 Hardcoding the password is optional. If a password is not provided the plugin will prompt for one the first time it's needed.
+
+###For Upgraded Users
+
+Defining Account info in `.vimrc` is now obsolesced, if you have correspond defination in `.vimrc' (for older version vimpress), they will automaticly copied into `~/.vimpressrc', now you're safe to remove the VIMPRESS defination in `.vimrc'.
 
