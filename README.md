@@ -19,7 +19,7 @@ VimRepress is a plugin for managing wordpress blog from Vim, using Markdown synt
  * BlogUpload   *[path/to/your/local/file]
  * BlogOpen     *[post id or full article URL]
  * BlogSwitch   [0,1,2 ... N, number of account in your config]
- * BlogCode     [type of lang for the <pre> element]
+ * BlogCode     [type of lang for the \<pre\> element]
  
   (Commands with a `*`, argument must be present.)
 
@@ -42,5 +42,8 @@ Hardcoding the password is optional. If a password is not provided the plugin wi
 
 ###For Upgraded Users
 
-Defining Account info in `.vimrc` is now obsolesced, if you have correspond defination in `.vimrc` (for older version vimpress), they will automaticly copied into `~/.vimpressrc`, now you're safe to remove the VIMPRESS defination in `.vimrc`.
+Defining account info in `.vimrc` is now obsolesced, if you have correspond defination in `.vimrc` (for older version vimpress), they will automaticly copied into `~/.vimpressrc`, now you're safe to remove the VIMPRESS defination in `.vimrc`.
+
+Users from the 2.x.x versions of vimrepress, need to run the `markdown_posts_upgrade.py` to upgrade the their posts data to be compatible with the 3.x.x version of vimrepress, or their Markdown source can not be used to re-edit by a newer vimrepress. 
+
 
