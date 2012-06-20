@@ -36,7 +36,7 @@
 "    - Write with Markdown, control posts format precisely.
 "    - Stores Markdown rawtext in wordpress custom fields.
 "
-" Version:	3.2.0
+" Version:	3.2.1
 "
 " Config: Create account configure as `~/.vimpressrc' in the following
 " format:
@@ -69,13 +69,26 @@ function! CompEditType(ArgLead, CmdLine, CursorPos)
   return "post\npage\n"
 endfunction
 
-command! -nargs=? -complete=custom,CompEditType BlogList exec('py blog_list(<f-args>)')
-command! -nargs=? -complete=custom,CompEditType BlogNew exec('py blog_new(<f-args>)')
-command! -nargs=? -complete=custom,CompSave BlogSave exec('py blog_save(<f-args>)')
-command! -nargs=? -complete=custom,CompPrev BlogPreview exec('py blog_preview(<f-args>)')
-command! -nargs=1 -complete=file BlogUpload exec('py blog_upload_media(<f-args>)')
-command! -nargs=1 BlogOpen exec('py blog_guess_open(<f-args>)')
-command! -nargs=? BlogSwitch exec('py blog_config_switch(<f-args>)')
-command! -nargs=? BlogCode exec('py blog_append_code(<f-args>)')
+let s:py_loaded = 0
+let s:vimpress_dir = fnamemodify(expand("<sfile>"), ":p:h")
 
-python import vim, os; execfile(os.path.join(vim.eval('fnamemodify(expand("<sfile>"), ":p:h")'), "blog.py"));
+function! PyCMD(pyfunc)
+    if (s:py_loaded == 0)
+        exec("cd " . s:vimpress_dir)
+        let s:pyfile = fnamemodify("blog.py", ":p")
+        exec("cd -")
+        exec("pyfile " . s:pyfile)
+        let s:py_loaded = 1
+    endif
+    exec('python ' . a:pyfunc)
+endfunction
+
+command! -nargs=? -complete=custom,CompEditType BlogList call PyCMD('blog_list(<f-args>)')
+command! -nargs=? -complete=custom,CompEditType BlogNew call PyCMD('blog_new(<f-args>)')
+command! -nargs=? -complete=custom,CompSave BlogSave call PyCMD('blog_save(<f-args>)')
+command! -nargs=? -complete=custom,CompPrev BlogPreview call PyCMD('blog_preview(<f-args>)')
+command! -nargs=1 -complete=file BlogUpload call PyCMD('blog_upload_media(<f-args>)')
+command! -nargs=1 BlogOpen call PyCMD('blog_guess_open(<f-args>)')
+command! -nargs=? BlogSwitch call PyCMD('blog_config_switch(<f-args>)')
+command! -nargs=? BlogCode call PyCMD('blog_append_code(<f-args>)')
+
