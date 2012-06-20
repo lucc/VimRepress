@@ -75,7 +75,7 @@ let s:vimpress_dir = fnamemodify(expand("<sfile>"), ":p:h")
 function! PyCMD(pyfunc)
     if (s:py_loaded == 0)
         exec("cd " . s:vimpress_dir)
-        let s:pyfile = fnamemodify("blog.py", ":p")
+        let s:pyfile = fnamemodify("vimrepress.py", ":p")
         exec("cd -")
         exec("pyfile " . s:pyfile)
         let s:py_loaded = 1
