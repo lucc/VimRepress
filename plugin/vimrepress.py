@@ -169,6 +169,8 @@ class DataObject(object):
 
             confpsr = SafeConfigParser()
             confile = os.path.expanduser("~/.vimpressrc")
+            if not os.path.exists(confile):
+                confile = os.path.expanduser("~/.vim/vimpressrc")
             conf_options = ("blog_url", "username", "password")
 
             if os.path.exists(confile):
